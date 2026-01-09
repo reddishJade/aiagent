@@ -4,20 +4,6 @@ from google.genai import types
 
 from config import MAX_CHARS
 
-schema_get_file_content = types.FunctionDeclaration(
-    name="get_file_content",
-    description="Reads the content of a specified file relative to the working directory",
-    parameters=types.Schema(
-        type=types.Type.OBJECT,
-        properties={
-            "directory": types.Schema(
-                type=types.Type.STRING,
-                description="File path to read, relative to the working directory",
-            ),
-        },
-    ),
-)
-
 
 def get_file_content(working_directory, file_path):
     try:
@@ -45,3 +31,18 @@ def get_file_content(working_directory, file_path):
 
     except Exception as e:
         return f'Error reading file "{file_path}": {e}'
+
+
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Reads the content of a specified file relative to the working directory",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "directory": types.Schema(
+                type=types.Type.STRING,
+                description="File path to read, relative to the working directory",
+            ),
+        },
+    ),
+)
