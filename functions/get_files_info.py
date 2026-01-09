@@ -28,4 +28,4 @@ def get_files_info(working_directory, directory="."):
         result = f"Result for '{directory}' directory:\n" + "\n".join(files)
         return result
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"Error listing files: {e}"
