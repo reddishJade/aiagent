@@ -4,8 +4,8 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from pydantic import config
 
+from call_function import available_functions
 from prompts import system_prompt
 
 
@@ -39,7 +39,9 @@ def generate_content(client, messages, verbose):
         model="gemini-2.5-flash",
         contents=messages,
         config=types.GenerateContentConfig(
-            system_instruction=system_prompt, temperature=0
+            tools=[available_functions],
+            system_instruction=system_prompt,
+            temperature=0,
         ),
     )
 
@@ -54,7 +56,12 @@ def generate_content(client, messages, verbose):
 
     # Print the response text
     print("Response:")
-    print(response.text)
+
+    if response.function_calls:
+        for function_call in response.function_calls:
+            print(f"Calling function: {function_call.name}({function_call.args})")
+    else:
+        print(response.text)
 
 
 if __name__ == "__main__":
