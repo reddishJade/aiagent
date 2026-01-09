@@ -17,7 +17,7 @@ def get_file_content(working_directory, file_path):
             return f'Error: File not found or is not a regular file: "{file_path}"'
 
         with open(target_file, "r") as file:
-            content = file.read(MAX_CHARS)
+            content = file.read(MAX_CHARS)  # Auto truncate by min(MAX_CHARS, file size)
             # After reading the first MAX_CHARS...
             if file.read(1):
                 content += (
