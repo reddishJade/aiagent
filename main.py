@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 
 from dotenv import load_dotenv
 from google import genai
@@ -34,50 +35,62 @@ def main():
 
 
 def generate_content(client, messages, verbose):
-    # Generate response
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=messages,
-        config=types.GenerateContentConfig(
-            tools=[available_functions],
-            system_instruction=system_prompt,
-            temperature=0,
-        ),
-    )
+    for _ in range(20):
+        # Generate response
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=messages,
+            config=types.GenerateContentConfig(
+                tools=[available_functions],
+                system_instruction=system_prompt,
+                temperature=0,
+            ),
+        )
 
-    # Verify usage_metadata is not None
-    if response.usage_metadata is None:
-        raise RuntimeError("API request failed: usage_metadata is None")
+        # Verify usage_metadata is not None
+        if response.usage_metadata is None:
+            raise RuntimeError("API request failed: usage_metadata is None")
 
-    if verbose:
-        # Print token usage information
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        if verbose:
+            # Print token usage information
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
-    # Print the response text
-    print("Response:")
+        # Add candidates to history
+        if response.candidates:
+            for candidate in response.candidates:
+                messages.append(candidate.content)
 
-    if response.function_calls:
-        function_results = []
-        for function_call in response.function_calls:
-            function_call_result = call_function(function_call, verbose=verbose)
+        if response.function_calls:
+            function_responses = []
+            for function_call in response.function_calls:
+                function_call_result = call_function(function_call, verbose=verbose)
 
-            # Sanity checks on function call result
-            if function_call_result.parts == []:
-                raise RuntimeError("Function call failed: empty result")
-            if function_call_result.parts[0].function_response is None:
-                raise RuntimeError("Function call failed: function_response is None")
-            if function_call_result.parts[0].function_response.response is None:
-                raise RuntimeError("Function call failed: response is None")
+                # Sanity checks on function call result
+                if function_call_result.parts == []:
+                    raise RuntimeError("Function call failed: empty result")
+                if function_call_result.parts[0].function_response is None:
+                    raise RuntimeError("Function call failed: function_response is None")
+                if function_call_result.parts[0].function_response.response is None:
+                    raise RuntimeError("Function call failed: response is None")
 
-            # Accumulate function results
-            function_results.append(function_call_result.parts[0])
+                # Accumulate function results
+                function_responses.append(function_call_result.parts[0])
 
-            if verbose:
-                print(f"-> {function_call_result.parts[0].function_response.response}")
+                if verbose:
+                    print(f"-> {function_call_result.parts[0].function_response.response}")
 
-    else:
-        print(response.text)
+            # Add function results to messages
+            messages.append(types.Content(role="user", parts=function_responses))
+        else:
+            # Final response reached
+            print("Final response:")
+            print(response.text)
+            return
+
+    # If maximum number of iterations is reached
+    print("Error: Maximum number of iterations (20) reached without a final response.")
+    sys.exit(1)
 
 
 if __name__ == "__main__":
